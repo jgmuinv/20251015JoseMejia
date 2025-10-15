@@ -4,12 +4,24 @@ using Microsoft.OpenApi.Models;
 using Scalar.AspNetCore;
 using System.Text;
 
+using Aplicacion.Productos;
+using Infraestructura.Productos;
+using Dominio.Productos;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// 1) Controllers
+// Controllers
 builder.Services.AddControllers();
 
-// 2) OpenAPI + Security (document transformer)
+// App Services + Repository (SQL)
+var connStr = builder.Configuration.GetConnectionString("Default")!;
+builder.Services.AddSingleton<IProductoRepository>(sp => new SqlProductoRepository(connStr));
+builder.Services.AddSingleton<IProductosService, ProductosService>();
+
+// File storage
+builder.Services.AddSingleton<Api.Services.IFileStorage, Api.Services.FileStorage>();
+
+// OpenAPI + Security (document transformer)
 builder.Services.AddOpenApi(options =>
 {
     options.AddDocumentTransformer((doc, ctx, ct) =>
@@ -23,10 +35,10 @@ builder.Services.AddOpenApi(options =>
             BearerFormat = "JWT",
             In = ParameterLocation.Header,
             Name = "Authorization",
-            Description = "Autenticación JWT. En Authorize ingrese SOLO el token (sin 'Bearer')."
+            Description = "AutenticaciÃ³n JWT. En Authorize ingrese SOLO el token (sin 'Bearer')."
         };
 
-        // b) Security Requirement global (aplica a todos los endpoints salvo que se anule)
+        // Security Requirement global (aplica a todos los endpoints salvo que se anule)
         doc.SecurityRequirements.Add(new OpenApiSecurityRequirement
         {
             [new OpenApiSecurityScheme
@@ -38,8 +50,7 @@ builder.Services.AddOpenApi(options =>
     });
 });
 
-// 3) Autenticación JWT en ASP.NET Core
-// (Clave de ejemplo: use su clave/Issuer/Audience reales desde configuración segura)
+// AutenticaciÃ³n JWT
 var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("dk5tn[8i[LJbcU`rC9$jJ0/6f@u9O$J-BzZDR4-D~!+mg*]J5;"));
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -60,7 +71,7 @@ builder.Services
 
 builder.Services.AddAuthorization(options =>
 {
-    // Ejemplo de política por rol/claim
+    // PolÃ­tica por rol/claim
     options.AddPolicy("AdminOnly", policy =>
         policy.RequireRole("Admin")); // o .RequireClaim("permission", "x")
 });
@@ -73,12 +84,13 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi(); // expone /openapi/v1.json
     app.MapScalarApiReference(options =>
     {
-        options.WithTitle("API de ejemplo")
+        options.WithTitle("API de tienda Web")
                .WithOpenApiRoutePattern("/openapi/{documentName}.json"); // asegura la ruta
     });
 }
 
 app.UseHttpsRedirection();
+app.UseStaticFiles();
 
 // 5) Middleware de auth
 app.UseAuthentication();
@@ -86,7 +98,7 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-// Ejemplo de endpoint protegido (si usa minimal APIs):
+// Endpoint protegido (Al usar minimal APIs):
 // app.MapGet("/secure", () => "OK").RequireAuthorization();
 
 app.Run();
