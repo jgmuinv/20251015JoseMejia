@@ -41,6 +41,19 @@ ScaffoldingReadMe.txt
 *~
 CodeCoverage/
 
+#VisualStudio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Visual Studio cache/options directory
+.vscode/
+
+#Rider
+.idea/
+
 # MSBuild Binary and Structured Log
 *.binlog
 
