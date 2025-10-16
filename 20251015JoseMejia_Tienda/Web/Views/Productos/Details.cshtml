@@ -1,0 +1,30 @@
+﻿@model Web.Models.ProductoViewModel
+@{
+    ViewData["Title"] = "Detalle Producto";
+}
+<h2>Detalle Producto</h2>
+<div class="card">
+    <div class="card-body">
+        <dl class="row">
+            <dt class="col-sm-3">Id</dt>
+            <dd class="col-sm-9">@Model.Id</dd>
+            <dt class="col-sm-3">Nombre</dt>
+            <dd class="col-sm-9">@Model.Nombre</dd>
+            <dt class="col-sm-3">Descripción</dt>
+            <dd class="col-sm-9">@Model.Descripcion</dd>
+            <dt class="col-sm-3">Precio Base</dt>
+            <dd class="col-sm-9">@Model.PrecioBase.ToString("C")</dd>
+            <dt class="col-sm-3">Precio Con Descuento</dt>
+            <dd class="col-sm-9">@(Model.PrecioConDescuento.HasValue ? Model.PrecioConDescuento.Value.ToString("C") : "-")</dd>
+            <dt class="col-sm-3">Imagen</dt>
+            <dd class="col-sm-9">
+                @if (!string.IsNullOrWhiteSpace(Model.ImagenUrl))
+                {
+                    <img src="@Model.ImagenUrl" style="height:120px" />
+                }
+            </dd>
+        </dl>
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">Editar</a>
+        <a asp-action="Index" class="btn btn-secondary">Volver</a>
+    </div>
+</div>

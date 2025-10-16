@@ -50,8 +50,12 @@ builder.Services.AddOpenApi(options =>
     });
 });
 
-// Autenticación JWT
-var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("dk5tn[8i[LJbcU`rC9$jJ0/6f@u9O$J-BzZDR4-D~!+mg*]J5;"));
+// Autenticación JWT (desde configuración)
+var jwtSection = builder.Configuration.GetSection("Jwt");
+var issuer = jwtSection.GetValue<string>("Issuer") ?? string.Empty;
+var audience = jwtSection.GetValue<string>("Audience") ?? string.Empty;
+var secret = jwtSection.GetValue<string>("Secret") ?? string.Empty;
+var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(opts =>
@@ -59,9 +63,9 @@ builder.Services
         opts.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
-            ValidIssuer = "JoseMejia",
+            ValidIssuer = issuer,
             ValidateAudience = true,
-            ValidAudience = "TiendaWeb",
+            ValidAudience = audience,
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = key,
             ValidateLifetime = true,

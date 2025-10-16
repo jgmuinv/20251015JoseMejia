@@ -2,6 +2,7 @@
 using Dapper;
 using Microsoft.Data.SqlClient;
 using Dominio.Productos;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Infraestructura.Productos;
 
@@ -70,8 +71,10 @@ public class SqlProductoRepository : IProductoRepository
 
     public async Task ActualizarAsync(Producto producto, CancellationToken ct = default)
     {
+        string imagen = "";
         using var conn = CreateConn();
-        var sql = @"UPDATE dbo.Productos SET Nombre=@Nombre, Descripcion=@Descripcion, PrecioBase=@PrecioBase, PrecioConDescuento=@PrecioConDescuento, Imagen=@Imagen, FechaHoraEdicion=GETDATE()
+        if (producto.ImagenUrl != null) imagen = ", Imagen=@Imagen ";
+        var sql = @$"UPDATE dbo.Productos SET Nombre=@Nombre, Descripcion=@Descripcion, PrecioBase=@PrecioBase, PrecioConDescuento=@PrecioConDescuento {imagen}, FechaHoraEdicion=GETDATE()
                     WHERE ProductoId=@Id";
         await conn.ExecuteAsync(sql, new
         {

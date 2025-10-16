@@ -23,7 +23,11 @@ public class ProductosController : ControllerBase
     public async Task<ActionResult<object>> SubirImagen([FromForm] IFormFile archivo, CancellationToken ct)
     {
         if (archivo == null || archivo.Length == 0) return BadRequest("Archivo vacío");
-        var ruta = await _files.SaveProductImageAsync(archivo, ct);
+        var rutaRelativa = await _files.SaveProductImageAsync(archivo, ct);
+        var baseUrl = $"{Request.Scheme}://{Request.Host}";
+        var ruta = rutaRelativa.StartsWith("http", StringComparison.OrdinalIgnoreCase)
+            ? rutaRelativa
+            : baseUrl + (rutaRelativa.StartsWith("/") ? rutaRelativa : "/" + rutaRelativa);
         return Ok(new { ruta });
     }
 

@@ -1,11 +1,67 @@
-﻿@* @model TModel *@
-@* *@
-@* @{ *@
-@*     Layout = null; *@
-@*     ViewData["Title"] = "Lista de productos"; *@
-@* } *@
-@* *@
-@* @Html.BeginForm("Index","Productos","POST") *@
-@* { *@
-@*      *@
-@* } *@
+﻿@model Web.Models.ProductosFiltroViewModel
+@{
+    ViewData["Title"] = "Productos";
+}
+<h2>Productos</h2>
+@if (TempData["msg"] != null) {
+    <div class="alert alert-info">@TempData["msg"]</div>
+}
+<form asp-action="Index" method="post" class="row g-3 mb-3">
+    <div class="col-md-4">
+        <label asp-for="Nombre" class="form-label"></label>
+        <input asp-for="Nombre" class="form-control" />
+    </div>
+    <div class="col-md-4">
+        <label asp-for="Descripcion" class="form-label"></label>
+        <input asp-for="Descripcion" class="form-control" />
+    </div>
+    <div class="col-md-2">
+        <label asp-for="Eliminado" class="form-label">Eliminado</label>
+        <select asp-for="Eliminado" class="form-select">
+            <option value="false">No</option>
+            <option value="true">Sí</option>
+        </select>
+    </div>
+    <div class="col-md-2 d-flex align-items-end">
+        <button type="submit" class="btn btn-primary me-2">Filtrar</button>
+        <a asp-action="Create" class="btn btn-success">Nuevo</a>
+    </div>
+</form>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Id</th>
+            <th>Nombre</th>
+            <th>Descripción</th>
+            <th>Precio Base</th>
+            <th>Descuento</th>
+            <th>Imagen</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var p in Model.Resultados)
+        {
+            <tr>
+                <td>@p.Id</td>
+                <td>@p.Nombre</td>
+                <td>@p.Descripcion</td>
+                <td>@p.PrecioBase.ToString("C")</td>
+                <td>@(p.PrecioConDescuento.HasValue ? p.PrecioConDescuento.Value.ToString("C") : "-")</td>
+                <td>
+                    @if (!string.IsNullOrWhiteSpace(p.ImagenUrl))
+                    {
+                        <img src="@p.ImagenUrl" alt="img" style="height:40px" />
+                    }
+                </td>
+                <td class="text-end">
+                    <a asp-action="Details" asp-route-id="@p.Id" class="btn btn-sm btn-info">Ver</a>
+                    <a asp-action="Edit" asp-route-id="@p.Id" class="btn btn-sm btn-primary">Editar</a>
+                    <form asp-action="Delete" asp-route-id="@p.Id" method="post" class="d-inline">
+                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar?');">Eliminar</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

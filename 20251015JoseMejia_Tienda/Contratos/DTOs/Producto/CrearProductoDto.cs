@@ -1,4 +1,4 @@
-﻿namespace Contratos.DTOs;
+﻿namespace Contratos.DTOs.Producto;
 
 public class CrearProductoDto
 {
