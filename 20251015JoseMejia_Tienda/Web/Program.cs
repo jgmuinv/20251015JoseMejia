@@ -1,7 +1,36 @@
+using System.Globalization;
+using System.Text.Json;
+using Microsoft.AspNetCore.Localization;
+using RestSharp;
+using Web.Services;
+using Microsoft.AspNetCore.Mvc.Razor;
+
 var builder = WebApplication.CreateBuilder(args);
 
+// JSON options (Las usa RestSharp y, si quiere, también su propio código)
+var json = new JsonSerializerOptions
+{
+    PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+    PropertyNameCaseInsensitive = true
+};
+
+// Registrar RestClient como Singleton configurado
+builder.Services.AddSingleton(sp =>
+{
+    var baseUrl = builder.Configuration["Api:BaseUrl"] ?? "https://localhost:7055/";
+    var client = new RestClient(new RestClientOptions(baseUrl));
+    return client;
+});
+
+// Registrar su servicio que habla con el API
+builder.Services.AddScoped<AuthApiClient>();
+
 // Add services to the container.
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews()
+    .AddViewLocalization(LanguageViewLocationExpanderFormat.Suffix)
+    .AddDataAnnotationsLocalization();
+
+builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
 
 // Config
 builder.Services.Configure<Web.Services.ApiOptions>(builder.Configuration.GetSection("Api"));
@@ -20,6 +49,16 @@ builder.Services.AddSession(options =>
 });
 
 var app = builder.Build();
+
+// Culturas admitidas y por defecto
+var supportedCultures = new[] { new CultureInfo("es-SV")};
+
+app.UseRequestLocalization(new RequestLocalizationOptions
+{
+    DefaultRequestCulture = new RequestCulture("es-SV"),
+    SupportedCultures = supportedCultures,
+    SupportedUICultures = supportedCultures
+});
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

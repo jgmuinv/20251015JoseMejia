@@ -38,7 +38,8 @@ public class ProductosService : IProductosService
     {
         var prod = await _repo.ObtenerPorIdAsync(id, ct);
         if (prod == null) return null;
-        prod.EditarDatos(dto.Nombre, dto.Descripcion, dto.ImagenUrl);
+        var revision = prod.EditarDatos(dto.Nombre, dto.Descripcion, dto.ImagenUrl);
+        //prod.ActualizarPrecio(dto.PrecioBase, dto.PrecioConDescuento);
         await _repo.ActualizarAsync(prod, ct);
         return Map(prod);
     }
@@ -47,7 +48,7 @@ public class ProductosService : IProductosService
     {
         var prod = await _repo.ObtenerPorIdAsync(id, ct);
         if (prod == null) return null;
-        prod.ActualizarPrecio(dto.PrecioBase, dto.PrecioConDescuento);
+        var revision = prod.ActualizarPrecio(dto.PrecioBase, dto.PrecioConDescuento);
         await _repo.ActualizarAsync(prod, ct);
         return Map(prod);
     }

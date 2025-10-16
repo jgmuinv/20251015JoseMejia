@@ -24,18 +24,18 @@ public class IngresarController : Controller
     public async Task<IActionResult> Index(LoginViewModel vm)
     {
         if (!ModelState.IsValid) return View(vm);
-        var (ok, token, usuario, error) = await _auth.LoginAsync(vm.Usuario, vm.Clave);
+        var resp = await _auth.LoginAsync(vm.Usuario, vm.Clave);
         //// Deserialice SIEMPRE el cuerpo (éxito o error)
         //var dto = await resp.Content.ReadFromJsonAsync<LoginResponse>(error);
-        if (ok && !string.IsNullOrWhiteSpace(token) && !string.IsNullOrWhiteSpace(usuario))
+        if (resp.Ok && !string.IsNullOrWhiteSpace(resp.Token) && !string.IsNullOrWhiteSpace(resp.Usuario))
         {
-            HttpContext.Session.SetString("auth_user", usuario);
-            HttpContext.Session.SetString("auth_token", token);
+            HttpContext.Session.SetString("auth_user", resp.Usuario);
+            HttpContext.Session.SetString("auth_token", resp.Token);
             if (!string.IsNullOrWhiteSpace(vm.ReturnUrl) && Url.IsLocalUrl(vm.ReturnUrl))
                 return Redirect(vm.ReturnUrl);
             return RedirectToAction("Index", "Productos");
         }
-        ModelState.AddModelError(string.Empty, error ?? "No se pudo iniciar sesión");
+        ModelState.AddModelError(string.Empty, resp.Error ?? "No se pudo iniciar sesión");
         return View(vm);
     }
 

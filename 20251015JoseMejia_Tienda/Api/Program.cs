@@ -11,7 +11,12 @@ using Dominio.Productos;
 var builder = WebApplication.CreateBuilder(args);
 
 // Controllers
-builder.Services.AddControllers();
+builder.Services.AddControllers()    
+    .AddJsonOptions(o =>
+        {
+            o.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+            o.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+        });
 
 // App Services + Repository (SQL)
 var connStr = builder.Configuration.GetConnectionString("Default")!;

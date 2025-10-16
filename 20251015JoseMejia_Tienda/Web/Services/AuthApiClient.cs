@@ -10,7 +10,7 @@ namespace Web.Services;
 
 public interface IAuthApiClient
 {
-    Task<(bool ok, string? token, string? usuario, string? error)> LoginAsync(string usuario, string clave, CancellationToken ct = default);
+    Task<LoginResponse> LoginAsync(string usuario, string clave, CancellationToken ct = default);
 }
 
 public class AuthApiClient : IAuthApiClient
@@ -29,16 +29,21 @@ public class AuthApiClient : IAuthApiClient
         PropertyNameCaseInsensitive = true
     };
 
-    public async Task<(bool ok, string? token, string? usuario, string? error)> LoginAsync(string usuario, string clave, CancellationToken ct = default)
+    public async Task<LoginResponse> LoginAsync(string usuario, string clave, CancellationToken ct = default)
     {
         var payload = EncryptCredentials(usuario + ":" + clave, _secret);
         var req = new RestRequest("/Auth/Login", Method.Post).AddJsonBody(new LoginRequest(payload));
         var res = await _client.ExecuteAsync<LoginResponse>(req, ct);
         if (!res.IsSuccessful || res.Data == null)
         {
-            return (false, null, null, res.ErrorMessage ?? res.Content);
+            LoginResponse? err = null;
+            if (!string.IsNullOrWhiteSpace(res.Content))
+            {
+                try { err = System.Text.Json.JsonSerializer.Deserialize<LoginResponse>(res.Content); } catch { }
+            }
+            return err ?? new LoginResponse(false, null, null, res.ErrorMessage ?? "No se pudo contactar el API");
         }
-        return (res.Data.Ok, res.Data.Token, res.Data.Usuario, res.Data.Error);
+        return res.Data;
     }
 
     private static string EncryptCredentials(string text, string secret)
@@ -62,5 +67,5 @@ public class AuthApiClient : IAuthApiClient
         return sha.ComputeHash(Encoding.UTF8.GetBytes(secret));
     }
 
-    private record LoginResponse(bool Ok, string? Token, string? Usuario, string? Error);
+    //private record LoginResponse(bool Ok, string? Token, string? Usuario, string? Error);
 }

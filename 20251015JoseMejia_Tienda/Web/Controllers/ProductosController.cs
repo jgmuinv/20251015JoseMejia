@@ -76,9 +76,10 @@ public class ProductosController : Controller
         var actualizado = await _api.EditarAsync(id, vm, Token);
         if (actualizado == null) return NotFound();
         // Además, si se envía cambios de precio, actualizar
-        if (vm.PrecioBase > 0)
+        if (vm.PrecioBase > 0 || vm.PrecioConDescuento > 0)
         {
-            await _api.ActualizarPrecioAsync(id, vm.PrecioBase, vm.PrecioConDescuento, Token);
+            var retorno = await _api.ActualizarPrecioAsync(id, vm.PrecioBase, vm.PrecioConDescuento, Token);
+            var abc = "hi";
         }
         TempData["msg"] = "Producto actualizado";
         return RedirectToAction(nameof(Index));

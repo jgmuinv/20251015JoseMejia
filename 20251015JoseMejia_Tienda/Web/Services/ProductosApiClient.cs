@@ -89,7 +89,7 @@ public class ProductosApiClient : IProductosApiClient
 
     public async Task<ProductoViewModel?> ActualizarPrecioAsync(int id, decimal precioBase, decimal? precioConDescuento, string? token, CancellationToken ct = default)
     {
-        var req = new RestRequest($"/Productos/ActualizarPrecio/{id}", Method.Put);
+        var req = new RestRequest($"/Productos/ActualizarPrecio/{id}/precio", Method.Put);
         SetAuth(req, token);
         var body = new ActualizarPrecioDto(precioBase, precioConDescuento);
         req.AddJsonBody(body);

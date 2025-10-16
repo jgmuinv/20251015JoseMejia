@@ -24,22 +24,24 @@ public class Producto
         ImagenUrl = imagenUrl;
     }
 
-    public void EditarDatos(string nombre, string descripcion, string? imagenUrl)
+    public string EditarDatos(string nombre, string descripcion, string? imagenUrl)
     {
-        if (string.IsNullOrWhiteSpace(nombre)) throw new ArgumentException("Nombre es requerido", nameof(nombre));
+        if (string.IsNullOrWhiteSpace(nombre)) return $"{nameof(nombre)}: Nombre es requerido";
         Nombre = nombre.Trim();
         Descripcion = descripcion?.Trim() ?? string.Empty;
         ImagenUrl = imagenUrl;
+        return "ok";
     }
 
-    public void ActualizarPrecio(decimal nuevoPrecioBase, decimal? nuevoPrecioConDescuento)
+    public string ActualizarPrecio(decimal nuevoPrecioBase, decimal? nuevoPrecioConDescuento)
     {
         if (nuevoPrecioBase <= 0)
-            throw new ArgumentOutOfRangeException(nameof(nuevoPrecioBase), "El precio base debe ser mayor que cero");
+            return ($"{nameof(nuevoPrecioBase)}: El precio base debe ser mayor que cero");
         if (nuevoPrecioConDescuento.HasValue && (nuevoPrecioConDescuento.Value <= 0 || nuevoPrecioConDescuento.Value > nuevoPrecioBase))
-            throw new ArgumentOutOfRangeException(nameof(nuevoPrecioConDescuento), "El descuento debe ser mayor a 0 y menor o igual al precio base");
+            return ($"{nameof(nuevoPrecioConDescuento)}: El descuento debe ser mayor a 0 y menor o igual al precio base");
 
         PrecioBase = nuevoPrecioBase;
         PrecioConDescuento = nuevoPrecioConDescuento;
+        return "ok";
     }
 }

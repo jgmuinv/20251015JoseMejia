@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using Contratos.DTOs.Ingresar;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -19,7 +20,7 @@ public class AuthController : ControllerBase
     }
 
     public record LoginRequest(string Payload);
-    public record LoginResponse(bool Ok, string? Token, string? Usuario, string? Error);
+    //public record LoginResponse(bool Ok, string? Token, string? Usuario, string? Error);
 
     [HttpPost]
     [AllowAnonymous]
