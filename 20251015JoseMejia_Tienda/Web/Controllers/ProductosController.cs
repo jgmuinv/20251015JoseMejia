@@ -9,9 +9,11 @@ namespace Web.Controllers;
 public class ProductosController : Controller
 {
     private readonly IProductosApiClient _api;
-    public ProductosController(IProductosApiClient api)
+    private readonly Microsoft.Extensions.Logging.ILogger<ProductosController> _logger;
+    public ProductosController(IProductosApiClient api, Microsoft.Extensions.Logging.ILogger<ProductosController> logger)
     {
         _api = api;
+        _logger = logger;
     }
 
     private string? Token => HttpContext.Session.GetString("auth_token");
@@ -67,22 +69,70 @@ public class ProductosController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(int id, ProductoViewModel vm, IFormFile? imagen)
     {
-        if (!ModelState.IsValid) return View(vm);
-        if (imagen != null && imagen.Length > 0)
+        try
         {
-            var ruta = await _api.SubirImagenAsync(imagen.OpenReadStream(), imagen.FileName, Token);
-            vm.ImagenUrl = ruta;
+            if (!ModelState.IsValid) return View(vm);
+            throw new Exception("Hi");
+            // Validaciones locales de precio: si no pasan, no ejecutar cambios en la base de datos
+            if (vm.PrecioConDescuento.HasValue)
+            {
+                if (vm.PrecioConDescuento.Value <= 0)
+                {
+                    ModelState.AddModelError(nameof(vm.PrecioConDescuento), "El descuento debe ser mayor a 0");
+                    return View(vm);
+                }
+                if (vm.PrecioConDescuento.Value > vm.PrecioBase)
+                {
+                    ModelState.AddModelError(nameof(vm.PrecioConDescuento), "El precio con descuento no puede ser mayor que el precio base");
+                    return View(vm);
+                }
+            }
+            if (vm.PrecioBase <= 0)
+            {
+                ModelState.AddModelError(nameof(vm.PrecioBase), "El precio base debe ser mayor que cero");
+                return View(vm);
+            }
+
+            // Subir imagen si hay
+            if (imagen != null && imagen.Length > 0)
+            {
+                var ruta = await _api.SubirImagenAsync(imagen.OpenReadStream(), imagen.FileName, Token);
+                vm.ImagenUrl = ruta;
+            }
+
+            // Primero actualizar datos básicos
+            var actualizado = await _api.EditarAsync(id, vm, Token);
+            if (actualizado == null) return NotFound();
+
+            // Luego actualizar precio si corresponde
+            if (vm.PrecioBase > 0 || (vm.PrecioConDescuento.HasValue && vm.PrecioConDescuento.Value > 0))
+            {
+                try
+                {
+                    var retorno = await _api.ActualizarPrecioAsync(id, vm.PrecioBase, vm.PrecioConDescuento, Token);
+                    if (retorno == null)
+                    {
+                        ModelState.AddModelError("", "No se pudo actualizar el precio del producto.");
+                        return View(vm);
+                    }
+                }
+                catch (InvalidOperationException ex)
+                {
+                    // Mensaje de validación desde API
+                    ModelState.AddModelError("", ex.Message);
+                    return View(vm);
+                }
+            }
+
+            TempData["msg"] = "Producto actualizado";
+            return RedirectToAction(nameof(Index));
         }
-        var actualizado = await _api.EditarAsync(id, vm, Token);
-        if (actualizado == null) return NotFound();
-        // Además, si se envía cambios de precio, actualizar
-        if (vm.PrecioBase > 0 || vm.PrecioConDescuento > 0)
+        catch (Exception ex)
         {
-            var retorno = await _api.ActualizarPrecioAsync(id, vm.PrecioBase, vm.PrecioConDescuento, Token);
-            var abc = "hi";
+            _logger.LogError(ex, "Error en edición de producto {Id}", id);
+            ModelState.AddModelError("", "Ocurrió un error inesperado al actualizar el producto.");
+            return View(vm);
         }
-        TempData["msg"] = "Producto actualizado";
-        return RedirectToAction(nameof(Index));
     }
 
     [HttpGet]

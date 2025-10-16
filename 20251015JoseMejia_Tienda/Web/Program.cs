@@ -4,8 +4,18 @@ using Microsoft.AspNetCore.Localization;
 using RestSharp;
 using Web.Services;
 using Microsoft.AspNetCore.Mvc.Razor;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure Serilog to write to Logs folder per project
+var logPath = System.IO.Path.Combine(AppContext.BaseDirectory, "Logs", "web-.log");
+Log.Logger = new LoggerConfiguration()
+    .Enrich.FromLogContext()
+    .WriteTo.File(logPath, rollingInterval: RollingInterval.Day, retainedFileCountLimit: 7)
+    .CreateLogger();
+
+builder.Host.UseSerilog(Log.Logger);
 
 // JSON options (Las usa RestSharp y, si quiere, también su propio código)
 var json = new JsonSerializerOptions
@@ -26,7 +36,10 @@ builder.Services.AddSingleton(sp =>
 builder.Services.AddScoped<AuthApiClient>();
 
 // Add services to the container.
-builder.Services.AddControllersWithViews()
+builder.Services.AddControllersWithViews(options =>
+    {
+        options.Filters.Add<Web.Filters.UserFriendlyExceptionFilter>();
+    })
     .AddViewLocalization(LanguageViewLocationExpanderFormat.Suffix)
     .AddDataAnnotationsLocalization();
 
@@ -68,6 +81,7 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseSerilogRequestLogging();
 app.UseRouting();
 app.UseSession();
 app.UseAuthorization();

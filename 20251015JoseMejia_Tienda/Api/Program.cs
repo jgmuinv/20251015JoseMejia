@@ -3,12 +3,22 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Scalar.AspNetCore;
 using System.Text;
+using Serilog;
 
 using Aplicacion.Productos;
 using Infraestructura.Productos;
 using Dominio.Productos;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure Serilog for API project
+var apiLogPath = System.IO.Path.Combine(AppContext.BaseDirectory, "Logs", "api-.log");
+Log.Logger = new LoggerConfiguration()
+    .Enrich.FromLogContext()
+    .WriteTo.File(apiLogPath, rollingInterval: RollingInterval.Day, retainedFileCountLimit: 7)
+    .CreateLogger();
+
+builder.Host.UseSerilog(Log.Logger);
 
 // Controllers
 builder.Services.AddControllers()    
@@ -100,6 +110,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+app.UseSerilogRequestLogging();
 
 // 5) Middleware de auth
 app.UseAuthentication();

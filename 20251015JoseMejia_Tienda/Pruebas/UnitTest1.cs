@@ -1,6 +1,7 @@
 ﻿using Aplicacion.Productos;
 using Infraestructura.Productos;
 using FluentAssertions;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Pruebas
 {
@@ -10,7 +11,7 @@ namespace Pruebas
         public async Task CrearProducto_PrecioInvalido_DebeFallar()
         {
             var repo = new InMemoryProductoRepository();
-            var svc = new ProductosService(repo);
+            var svc = new ProductosService(repo, NullLogger<ProductosService>.Instance);
 
             await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () =>
             {
@@ -22,7 +23,7 @@ namespace Pruebas
         public async Task ActualizarPrecio_ConDescuentoOpcional_Valido()
         {
             var repo = new InMemoryProductoRepository();
-            var svc = new ProductosService(repo);
+            var svc = new ProductosService(repo, NullLogger<ProductosService>.Instance);
             var p = await svc.CrearAsync(new CrearProductoDto("Prod", "desc", 100m, null, null));
 
             var actualizado = await svc.ActualizarPrecioAsync(p.Id, new ActualizarPrecioDto(120m, 90m));
@@ -35,7 +36,7 @@ namespace Pruebas
         public async Task Listar_UsaProcedimientoAlmacenado_SimulaOk()
         {
             var repo = new InMemoryProductoRepository();
-            var svc = new ProductosService(repo);
+            var svc = new ProductosService(repo, NullLogger<ProductosService>.Instance);
             await svc.CrearAsync(new CrearProductoDto("P1", "d", 10m, null, null));
             var items = await svc.ListarAsync("P", "d", false);
             items.Should().NotBeEmpty();
@@ -45,7 +46,7 @@ namespace Pruebas
         public async Task ObtenerPorId_Existente_DevuelveProducto()
         {
             var repo = new InMemoryProductoRepository();
-            var svc = new ProductosService(repo);
+            var svc = new ProductosService(repo, NullLogger<ProductosService>.Instance);
             var creado = await svc.CrearAsync(new CrearProductoDto("P1", "d", 10m, null, null));
 
             var res = await svc.ObtenerPorIdAsync(creado.Id);

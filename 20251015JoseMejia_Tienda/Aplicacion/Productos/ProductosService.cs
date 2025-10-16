@@ -1,4 +1,5 @@
 ﻿using Dominio.Productos;
+using Microsoft.Extensions.Logging;
 
 namespace Aplicacion.Productos;
 
@@ -16,9 +17,11 @@ public interface IProductosService
 public class ProductosService : IProductosService
 {
     private readonly IProductoRepository _repo;
-    public ProductosService(IProductoRepository repo)
+    private readonly Microsoft.Extensions.Logging.ILogger<ProductosService> _logger;
+    public ProductosService(IProductoRepository repo, Microsoft.Extensions.Logging.ILogger<ProductosService> logger)
     {
         _repo = repo;
+        _logger = logger;
     }
 
     public async Task<IReadOnlyList<ProductoDto>> ListarAsync(string Nombre, string Descripcion, bool Eliminado, CancellationToken ct = default)
@@ -29,28 +32,63 @@ public class ProductosService : IProductosService
 
     public async Task<ProductoDto> CrearAsync(CrearProductoDto dto, CancellationToken ct = default)
     {
-        var prod = new Producto(dto.Nombre, dto.Descripcion, dto.PrecioBase, false, dto.ImagenUrl);
-        await _repo.CrearAsync(prod, ct);
-        return Map(prod);
+        try
+        {
+            var prod = new Producto(dto.Nombre, dto.Descripcion, dto.PrecioBase, false, dto.ImagenUrl, dto.PrecioConDescuento);
+            await _repo.CrearAsync(prod, ct);
+            return Map(prod);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al crear producto {Nombre}", dto.Nombre);
+            throw;
+        }
     }
 
     public async Task<ProductoDto?> EditarAsync(int id, EditarProductoDto dto, CancellationToken ct = default)
     {
-        var prod = await _repo.ObtenerPorIdAsync(id, ct);
-        if (prod == null) return null;
-        var revision = prod.EditarDatos(dto.Nombre, dto.Descripcion, dto.ImagenUrl);
-        //prod.ActualizarPrecio(dto.PrecioBase, dto.PrecioConDescuento);
-        await _repo.ActualizarAsync(prod, ct);
-        return Map(prod);
+        try
+        {
+            var prod = await _repo.ObtenerPorIdAsync(id, ct);
+            if (prod == null) return null;
+            var revision = prod.EditarDatos(dto.Nombre, dto.Descripcion, dto.ImagenUrl);
+            if (!string.Equals(revision, "ok", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new ArgumentException(revision);
+            }
+            await _repo.ActualizarAsync(prod, ct);
+            return Map(prod);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al editar producto {ProductoId}", id);
+            throw;
+        }
     }
 
     public async Task<ProductoDto?> ActualizarPrecioAsync(int id, ActualizarPrecioDto dto, CancellationToken ct = default)
     {
-        var prod = await _repo.ObtenerPorIdAsync(id, ct);
-        if (prod == null) return null;
-        var revision = prod.ActualizarPrecio(dto.PrecioBase, dto.PrecioConDescuento);
-        await _repo.ActualizarAsync(prod, ct);
-        return Map(prod);
+        try
+        {
+            var prod = await _repo.ObtenerPorIdAsync(id, ct);
+            if (prod == null) return null;
+            var revision = prod.ActualizarPrecio(dto.PrecioBase, dto.PrecioConDescuento);
+            if (!string.Equals(revision, "ok", StringComparison.OrdinalIgnoreCase))
+            {
+                // Map message to parameter name for validation response
+                var param = revision.Contains("nuevoPrecioConDescuento", StringComparison.OrdinalIgnoreCase)
+                    ? nameof(dto.PrecioConDescuento)
+                    : nameof(dto.PrecioBase);
+                throw new ArgumentOutOfRangeException(param, revision);
+            }
+            await _repo.ActualizarAsync(prod, ct);
+            return Map(prod);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al actualizar precio de producto {ProductoId}", id);
+            throw;
+        }
     }
 
     public async Task<bool> EliminarAsync(int id, CancellationToken ct = default)

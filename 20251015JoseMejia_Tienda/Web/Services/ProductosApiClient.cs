@@ -93,9 +93,38 @@ public class ProductosApiClient : IProductosApiClient
         SetAuth(req, token);
         var body = new ActualizarPrecioDto(precioBase, precioConDescuento);
         req.AddJsonBody(body);
-        var res = await _client.ExecuteAsync<ProductoDto>(req, ct);
-        if (!res.IsSuccessful) return null;
-        return res.Data == null ? null : MapInstance(res.Data);
+        var res = await _client.ExecuteAsync(req, ct);
+        if (res.IsSuccessful)
+        {
+            var dto = System.Text.Json.JsonSerializer.Deserialize<ProductoDto>(res.Content ?? "");
+            return dto == null ? null : MapInstance(dto);
+        }
+        if ((int)res.StatusCode == 400 && !string.IsNullOrWhiteSpace(res.Content))
+        {
+            try
+            {
+                // Try to parse ValidationProblemDetails: { errors: { key: ["msg"] } }
+                using var doc = System.Text.Json.JsonDocument.Parse(res.Content);
+                if (doc.RootElement.TryGetProperty("errors", out var errors))
+                {
+                    foreach (var prop in errors.EnumerateObject())
+                    {
+                        var arr = prop.Value.EnumerateArray();
+                        if (arr.MoveNext())
+                        {
+                            var msg = arr.Current.GetString();
+                            if (!string.IsNullOrWhiteSpace(msg)) throw new InvalidOperationException(msg);
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // ignore parse error
+            }
+            throw new InvalidOperationException("Los valores de precio no son válidos.");
+        }
+        return null;
     }
 
     public async Task<bool> EliminarAsync(int id, string? token, CancellationToken ct = default)
