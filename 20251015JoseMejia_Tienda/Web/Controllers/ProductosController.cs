@@ -72,7 +72,7 @@ public class ProductosController : Controller
         try
         {
             if (!ModelState.IsValid) return View(vm);
-            throw new Exception("Hi");
+
             // Validaciones locales de precio: si no pasan, no ejecutar cambios en la base de datos
             if (vm.PrecioConDescuento.HasValue)
             {
